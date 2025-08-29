@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Math Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 2rem auto;
+      padding: 1rem;
+      line-height: 1.5;
+    }
+    h1 {
+      text-align: center;
+    }
+    .question {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .result {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+    .correct {
+      color: green;
+      font-weight: bold;
+    }
+    .incorrect {
+      color: red;
+      font-weight: bold;
+    }
+    canvas {
+      border: 1px solid black;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Math Quiz</h1>
+  <form id="quizForm">
+
+    <!-- Q1 -->
+    <div class="question">
+      <p>1. What is the slope of the line passing through (2, 3) and (6, 7)?</p>
+      <label><input type="radio" name="q1" value="1"> 1</label><br>
+      <label><input type="radio" name="q1" value="2"> 2</label><br>
+      <label><input type="radio" name="q1" value="0.5"> 0.5</label><br>
+      <label><input type="radio" name="q1" value="4"> 4</label>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question">
+      <p>2. Write the equation of the line with slope <b>2</b> that passes through the point (1, -1).  
+         Use the format <i>y = mx + b</i>.</p>
+      <input type="text" name="q2" placeholder="y = 2x - 3">
+    </div>
+
+    <!-- Q3 -->
+    <div class="question">
+      <p>3. Which equation matches a line that passes through (0,2) with slope -1?</p>
+      <label><input type="radio" name="q3" value="y = -x + 2"> y = -x + 2</label><br>
+      <label><input type="radio" name="q3" value="y = x + 2"> y = x + 2</label><br>
+      <label><input type="radio" name="q3" value="y = -x - 2"> y = -x - 2</label><br>
+      <label><input type="radio" name="q3" value="y = 2x + 1"> y = 2x + 1</label>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question">
+      <p>4. What is the slope of the line <i>y = -3x + 2</i>?</p>
+      <input type="text" name="q4" placeholder="Enter slope">
+    </div>
+
+    <!-- Q5 -->
+    <div class="question">
+      <p>5. Plot the point (3, 2) on the grid by dragging the red point.  
+         The point will snap to the nearest intersection.</p>
+      <canvas id="plotCanvas" width="300" height="300"></canvas>
+      <input type="hidden" name="q5" id="q5answer">
+    </div>
+
+    <button type="submit">Submit Quiz</button>
+  </form>
+
+  <div id="result" class="result" style="display:none;"></div>
+
+  <script>
+    const quizForm = document.getElementById('quizForm');
+    const resultDiv = document.getElementById('result');
+
+    // Store correct answers
+    const answers = {
+      q1: "1",
+      q2: "y = 2x - 3",
+      q3: "y = -x + 2",
+      q4: "-3",
+      q5: "3,2"
+    };
+
+    // ====== Q5: Interactive Canvas ======
+    const canvas = document.getElementById('plotCanvas');
+    const ctx = canvas.getContext('2d');
+    const size = 300;
+    const step = 30; // pixels per unit
+    let point = {x: size/2, y: size/2}; // starts at origin
+
+    function drawGrid() {
+      ctx.clearRect(0,0,size,size);
+      ctx.strokeStyle = "#ccc";
+      for (let i = 0; i <= size; i += step) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, size);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(size, i);
+        ctx.stroke();
+      }
+      // axes
+      ctx.strokeStyle = "#000";
+      ctx.beginPath();
+      ctx.moveTo(0, size/2);
+      ctx.lineTo(size, size/2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(size/2, 0);
+      ctx.lineTo(size/2, size);
+      ctx.stroke();
+
+      // draw point
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 6, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    function canvasToMath(px, py) {
+      let mx = Math.round((px - size/2) / step);
+      let my = Math.round((size/2 - py) / step);
+      return {mx, my};
+    }
+
+    function mathToCanvas(mx,my){
+      let px = size/2 + mx*step;
+      let py = size/2 - my*step;
+      return {px,py};
+    }
+
+    drawGrid();
+
+    let dragging = false;
+    canvas.addEventListener('mousedown', e => {
+      let rect = canvas.getBoundingClientRect();
+      let mx = e.clientX - rect.left;
+      let my = e.clientY - rect.top;
+      let dx = mx - point.x;
+      let dy = my - point.y;
+      if (Math.sqrt(dx*dx + dy*dy) < 10) dragging = true;
+    });
+    canvas.addEventListener('mousemove', e => {
+      if (dragging) {
+        let rect = canvas.getBoundingClientRect();
+        let rawX = e.clientX - rect.left;
+        let rawY = e.clientY - rect.top;
+        // snap to grid
+        let {mx,my} = canvasToMath(rawX, rawY);
+        let {px,py} = mathToCanvas(mx,my);
+        point.x = px;
+        point.y = py;
+        document.getElementById('q5answer').value = `${mx},${my}`;
+        drawGrid();
+      }
+    });
+    canvas.addEventListener('mouseup', () => {
+      dragging = false;
+    });
+
+    // ====== Grading ======
+    quizForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      let score = 0;
+      let total = Object.keys(answers).length;
+      let output = "<h2>Results:</h2>";
+
+      // Q1
+      if (quizForm.q1.value === answers.q1) {
+        score++; output += `<p>Q1: <span class="correct">Correct</span></p>`;
+      } else {
+        output += `<p>Q1: <span class="incorrect">Incorrect</span> (Correct: ${answers.q1})</p>`;
+      }
+
+      // Q2
+      const q2 = quizForm.q2.value.trim().replace(/\s+/g,'').toLowerCase();
+      const correctQ2 = answers.q2.replace(/\s+/g,'').toLowerCase();
+      if (q2 === correctQ2) {
+        score++; output += `<p>Q2: <span class="correct">Correct</span></p>`;
+      } else {
+        output += `<p>Q2: <span class="incorrect">Incorrect</span> (Correct: ${answers.q2})</p>`;
+      }
+
+      // Q3
+      if (quizForm.q3.value === answers.q3) {
+        score++; output += `<p>Q3: <span class="correct">Correct</span></p>`;
+      } else {
+        output += `<p>Q3: <span class="incorrect">Incorrect</span> (Correct: ${answers.q3})</p>`;
+      }
+
+      // Q4
+      if (quizForm.q4.value.trim() === answers.q4) {
+        score++; output += `<p>Q4: <span class="correct">Correct</span></p>`;
+      } else {
+        output += `<p>Q4: <span class="incorrect">Incorrect</span> (Correct: ${answers.q4})</p>`;
+      }
+
+      // Q5
+      if (quizForm.q5.value === answers.q5) {
+        score++; output += `<p>Q5: <span class="correct">Correct</span></p>`;
+      } else {
+        output += `<p>Q5: <span class="incorrect">Incorrect</span> (Plotted: ${quizForm.q5.value || "none"}; Correct: ${answers.q5})</p>`;
+      }
+
+      output += `<h3>Final Score: ${score} / ${total}</h3>`;
+      resultDiv.innerHTML = output;
+      resultDiv.style.display = "block";
+    });
+  </script>
+</body>
+</html>
